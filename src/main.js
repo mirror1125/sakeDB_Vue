@@ -5,10 +5,8 @@ import router from './router'
 import store from './store'
 import vuetify from './plugins/vuetify'
 import firebase from 'firebase'
-import vuelidate from 'vuelidate'
 
 Vue.config.productionTip = false
-Vue.use(vuelidate)
 
 const config = {
   apiKey: "AIzaSyCUS1fUX0wvA7UZn9LnPKLfQRSZsn9K9aI",

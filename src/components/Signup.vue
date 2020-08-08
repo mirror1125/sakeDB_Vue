@@ -5,41 +5,13 @@
         <h1 class="display-1">新規登録</h1>
       </v-card-title>
       <v-card-text>
-        <v-form>
-          <v-text-field
-            prepend-icon="mdi-account-circle"
-            label="メールアドレス"
-            v-model.trim="$v.username.$model"
-          />
-          <div class="error" v-if="!$v.username.required">入力してください</div>
-          <v-text-field
-            v-bind:type="showPassword ? 'text' : 'password'"
-            prepend-icon="mdi-lock"
-            v-bind:append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            label="パスワード"
-            v-model.trim="$v.password.$model"
-            @click:append="showPassword = !showPassword"
-          />
-          <div class="error" v-if="!$v.password.required">入力してください</div>
-          <div
-            class="error"
-            v-if="!$v.password.minLength"
-          >{{$v.password.$params.minLength.min}}文字以上にしてください</div>
-          <v-text-field
-            v-bind:type="showConfPass ? 'text' : 'password'"
-            prepend-icon="mdi-lock"
-            v-bind:append-icon="showConfPass ? 'mdi-eye' : 'mdi-eye-off'"
-            label="パスワード(確認用)"
-            v-model.trim="$v.conf_pass.$model"
-            @click:append="showConfPass = !showConfPass"
-          />
-          <div class="error" v-if="!$v.conf_pass.required">入力してください</div>
-          <div
-            class="error"
-            v-if="!$v.conf_pass.minLength"
-          >{{$v.conf_pass.$params.minLength.min}}文字以上にしてください</div>
+        <v-form ref="signup_form">
+          <v-text-field prepend-icon="mdi-account-circle" label="メールアドレス" v-model="username" :rules="[required, email]" @change="onChange" />
+          <v-text-field v-bind:type="showPassword ? 'text' : 'password'" prepend-icon="mdi-lock" v-bind:append-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'" label="パスワード" v-model="password" @click:append="showPassword = !showPassword" :rules="[required, limit_length]" @change="onChange" />
+          <v-text-field v-bind:type="showConfPass ? 'text' : 'password'" prepend-icon="mdi-lock" v-bind:append-icon="showConfPass ? 'mdi-eye' : 'mdi-eye-off'"   label="パスワード(確認用)" v-model="conf_pass" @click:append="showConfPass = !showConfPass" :rules="[required, limit_length, passwordConfirmationRule]" @change="onChange" />
           <v-card-actions>
             <v-btn @click="signUp" class="info">登録</v-btn>
+            <span class="btn_span error--text v-messages__message" v-if="!validate_success">入力項目にエラーがあります</span>
           </v-card-actions>
         </v-form>
       </v-card-text>
@@ -48,44 +20,55 @@
 </template>
 
 <script>
-import firebase from "firebase";
-import { require, minLength } from "vuelidate/lib/validators";
+import firebase from 'firebase'
 
 export default {
-  name: "Signup",
+  name: 'Signup',
   data: () => ({
     showPassword: false,
     showConfPass: false,
-    username: "",
-    password: "",
-    conf_pass: "",
+    username: '',
+    password: '',
+    conf_pass: '',
+    validate_success: true, 
+    required: value => !!value || "必ず入力してください",
+    limit_length: value => value.length >= 8 || "8文字以上にしてください",
+    email: v => /.+@.+/.test(v) || 'メールアドレスを入力してください',
   }),
-  validations: {
-    username: {
-      require,
-    },
-    password: {
-      require,
-      minLength: minLength(8),
-    },
-    conf_pass: {
-      require,
-      minLength: minLength(8),
-    },
+  computed: {
+    passwordConfirmationRule() {
+      return () => (this.password === this.conf_pass) || 'パスワードが一致しません'
+    }
   },
   methods: {
     signUp: function () {
-      firebase
-        .auth()
-        .createUserWithEmailAndPassword(this.username, this.password)
-        .then((res) => {
-          alert("ユーザ登録完了 : " + res.user.email);
-          this.$router.push("/signin");
-        })
-        .catch((error) => {
-          alert(error.message);
-        });
+      if(this.$refs.signup_form.validate()) {
+        this.validate_success = true
+        firebase.auth().createUserWithEmailAndPassword(this.username, this.password)
+          .then(res => {
+            alert('ユーザ登録完了 : ' + res.user.email)
+            this.$router.push('/signin')
+          })
+          .catch(error => {
+            alert(error.message)
+          })
+      } else {
+        this.validate_success = false
+      }
     },
-  },
-};
+
+    onChange: function () {
+      if (!this.validate_success && this.$refs.signup_form.validate()) {
+         this.validate_success = true
+      }
+    }
+  }
+}
 </script>
+
+<style scoped>
+.btn_span {
+  margin-left: 5px;
+}
+
+</style>
