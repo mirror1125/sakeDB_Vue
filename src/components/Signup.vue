@@ -1,5 +1,7 @@
 <template>
   <div class="signup">
+    <v-alert type="error" v-if="!validate_success">入力項目にエラーがあります</v-alert>
+    <v-alert type="error" v-if="!signup_success">{{ errorMessage }}</v-alert>
     <v-card width="400px" class="mx-auto mt-5">
       <v-card-title>
         <h1 class="display-1">新規登録</h1>
@@ -11,7 +13,6 @@
           <v-text-field v-bind:type="showConfPass ? 'text' : 'password'" prepend-icon="mdi-lock" v-bind:append-icon="showConfPass ? 'mdi-eye' : 'mdi-eye-off'"   label="パスワード(確認用)" v-model="conf_pass" @click:append="showConfPass = !showConfPass" :rules="[required, limit_length, passwordConfirmationRule]" @change="onChange" />
           <v-card-actions>
             <v-btn @click="signUp" class="info">登録</v-btn>
-            <span class="btn_span error--text v-messages__message" v-if="!validate_success">入力項目にエラーがあります</span>
           </v-card-actions>
         </v-form>
       </v-card-text>
@@ -30,7 +31,9 @@ export default {
     username: '',
     password: '',
     conf_pass: '',
-    validate_success: true, 
+    errorMessage: '',
+    validate_success: true,
+    signup_success: true,
     required: value => !!value || "必ず入力してください",
     limit_length: value => value.length >= 8 || "8文字以上にしてください",
     email: v => /.+@.+/.test(v) || 'メールアドレスを入力してください',
@@ -44,13 +47,15 @@ export default {
     signUp: function () {
       if(this.$refs.signup_form.validate()) {
         this.validate_success = true
+        this.signup_success = true
         firebase.auth().createUserWithEmailAndPassword(this.username, this.password)
           .then(res => {
             alert('ユーザ登録完了 : ' + res.user.email)
             this.$router.push('/signin')
           })
           .catch(error => {
-            alert(error.message)
+            this.signup_success = false
+            this.errorMessage = error.message
           })
       } else {
         this.validate_success = false
